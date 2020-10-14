@@ -6,6 +6,7 @@
 module RedBlack where
 
 import qualified Data.Foldable as Foldable
+import qualified Data.List as List
 import Test.QuickCheck hiding (elements)
 
 data Color = R | B deriving (Eq, Show)
@@ -41,10 +42,10 @@ bad2 :: RBT Int
 bad2 = Root $ N B (N R E 1 E) 2 (N B E 3 E)
 
 bad3 :: RBT Int
-bad3 = undefined
+bad3 = Root $ N B (N R (N R E 1 E) 2 E) 3 (N R E 4 E)
 
 bad4 :: RBT Int
-bad4 = undefined
+bad4 = Root $ N B (N B E 3 E) 2 (N B E 1 E)
 
 trees :: [(String, RBT Int)]
 trees =
@@ -69,7 +70,11 @@ isRootBlack :: RBT a -> Bool
 isRootBlack (Root t) = color t == B
 
 consistentBlackHeight :: RBT a -> Bool
-consistentBlackHeight = undefined
+consistentBlackHeight (Root (N _ a _ b)) =
+  blackHeight a == blackHeight b
+    && consistentBlackHeight (Root a)
+    && consistentBlackHeight (Root b)
+consistentBlackHeight (Root E) = True
 
 noRedRed :: RBT a -> Bool
 noRedRed (Root t) = aux t
@@ -125,6 +130,10 @@ prop_InsertEmpty x = elements (insert x empty) == [x]
 prop_InsertInsert :: A -> A -> RBT A -> Bool
 prop_InsertInsert x y t =
   insert x (insert y t) == insert y (insert x t)
+
+prop_InsertModel :: Ord a => a -> RBT a -> Bool
+prop_InsertModel x t =
+  elements (insert x t) == List.insert x (List.delete x $ elements t)
 
 prop_InsertDelete :: A -> A -> RBT A -> Bool
 prop_InsertDelete k k0 t =
